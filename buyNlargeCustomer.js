@@ -51,7 +51,7 @@ function returnAll() {
             // console.log(res)
             inventory = res;
             console.table(res);
-            console.table(inventory);
+            // console.table(inventory);
             appStore();
             // connection.end();
         });
@@ -71,6 +71,7 @@ function appStore() {
                     console.log('There is not enough inventory to fullfil your request. There is only ' + inventory[i].stock_quantity + ' units available');
                 } else{
                     console.log('There are ' + inventory[i].stock_quantity);
+
                 }
             }
         }
