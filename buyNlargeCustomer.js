@@ -1,4 +1,3 @@
-// console.log("This is running");
 
 const mysql = require('mysql');
 const inquire = require('inquirer')
@@ -28,6 +27,11 @@ let connection = mysql.createConnection({
     insecureAuth: true
 });
 
+connection.connect(function(error) {
+    if (error) throw error;
+    console.log ('Connected as id ' + connection.threadId);
+});
+
 function appEntry() {
     figlet('Welcome to Buy-N-Large', function(err, data) {
         if (err) {
@@ -42,46 +46,78 @@ function appEntry() {
 
 function returnAll() {
 
-    connection.connect(function(error){
+    connection.query('SELECT * FROM products;', function(error, res) {
         if (error) throw error;
-        console.log ('Connected as id ' + connection.threadId);
-    
-        connection.query('SELECT * FROM products;', function(error, res) {
-            if (error) throw error;
-            // console.log(res)
-            inventory = res;
-            console.table(res);
-            // console.table(inventory);
-            appStore();
-            // connection.end();
-        });
+        // console.log(res)
+        inventory = res;
+        console.table(res);
+        // console.table(inventory);
+        appStore();
+        // connection.end();
     });
 }
 
 function appStore() {
+
     // console.log('This will be more infor for the user');
     console.log('');
     inquire.prompt(questions).then (answers => {
 
+        let quantityLess;
+
         for (let i = 0; i < inventory.length; i++) {
             if (answers.product_ID === inventory[i].item_id.toString()) {
-                console.log('This is the product_ID entered: ' + inventory[i].item_id);
+                console.log('Product_ID entered: ' + inventory[i].item_id);
                 if (inventory[i].stock_quantity === 0 || inventory[i].stock_quantity < answers.quantity){
                     //TODO: Update the table to reflect the items purchased
                     console.log('There is not enough inventory to fullfil your request. There is only ' + inventory[i].stock_quantity + ' units available');
+                    console.log('Please choose another quantity.');
+                    returnAll();
                 } else{
+                    quantityLess = inventory[i].stock_quantity - answers.quantity;
+                    console.log(quantityLess);
                     console.log('There are ' + inventory[i].stock_quantity);
-
+                    updateProduct(quantityLess, inventory[i].item_id);
                 }
             }
         }
         
         console.log(answers.product_ID + " " + answers.quantity);
 
-        connection.end();
-
-        //TODO: Add logic to other functions to query the database
     });
 }
+
+function updateProduct(newQuant, item_id) {
+    console.log("Updating quantities...\n");
+    var query = connection.query(
+      "UPDATE products SET ? WHERE ?",
+      [{
+          stock_quantity: newQuant
+        },
+        {
+          item_id: item_id
+        }
+      ],
+      function (err, res) {
+          inquire.prompt([
+              {
+                  type: 'input',
+                  name: 'continue',
+                  message: 'Would you like to keep shoping? Y/n '
+              }
+          ]).then (answers => {
+            if (answers.continue.toLowerCase() === 'y' || answers.continue.toLowerCase() === 'yes') {
+                returnAll();
+                console.log(res.affectedRows + " products updated!\n");
+            } else{
+                console.log('Thank you for shopping at Buy-N-Large');
+                connection.end();
+            }
+          });    
+      });
+  
+    // logs the actual query being run
+    console.log(query.sql);
+  }
 
 appEntry();
