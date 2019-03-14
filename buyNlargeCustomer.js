@@ -2,7 +2,6 @@
 const mysql = require('mysql');
 const inquire = require('inquirer')
 const figlet = require('figlet');
-const fs = require('fs');
 
 let inventory = [];
 let questions = [
@@ -30,6 +29,7 @@ let connection = mysql.createConnection({
 connection.connect(function(error) {
     if (error) throw error;
     console.log ('Connected as id ' + connection.threadId);
+    console.log ('');
 });
 
 function appEntry() {
@@ -63,27 +63,27 @@ function appStore() {
     console.log('');
     inquire.prompt(questions).then (answers => {
 
-        let quantityLess;
+        let newQuantity;
 
         for (let i = 0; i < inventory.length; i++) {
             if (answers.product_ID === inventory[i].item_id.toString()) {
+                console.log('');
                 console.log('Product_ID entered: ' + inventory[i].item_id);
+                console.log('');
                 if (inventory[i].stock_quantity === 0 || inventory[i].stock_quantity < answers.quantity){
-                    //TODO: Update the table to reflect the items purchased
                     console.log('There is not enough inventory to fullfil your request. There is only ' + inventory[i].stock_quantity + ' units available');
                     console.log('Please choose another quantity.');
                     returnAll();
                 } else{
-                    quantityLess = inventory[i].stock_quantity - answers.quantity;
-                    console.log(quantityLess);
-                    console.log('There are ' + inventory[i].stock_quantity);
-                    updateProduct(quantityLess, inventory[i].item_id);
+                    newQuantity = inventory[i].stock_quantity - answers.quantity;
+                    console.log('You have requested: ' + answers.quantity);
+                    console.log('There are ' + newQuantity + ' left.');
+                    console.log('');
+                    updateProduct(newQuantity, inventory[i].item_id);
                 }
             }
         }
-        
-        console.log(answers.product_ID + " " + answers.quantity);
-
+        // console.log(answers.product_ID + " " + answers.quantity); //for testing
     });
 }
 
@@ -118,6 +118,6 @@ function updateProduct(newQuant, item_id) {
   
     // logs the actual query being run
     console.log(query.sql);
-  }
+}
 
 appEntry();
